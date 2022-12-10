@@ -1,0 +1,393 @@
+const CreateIntent = async (req, res) => {
+  // const { displayName, trainingPhrasesParts, messageTexts } = req.body;
+  const projectId = process.env.NODE_PRODUCTID;
+
+  const displayName = "inventory";
+  const trainingPhrasesParts = ["how many cars you have?", "do have any xuv?"];
+  const messageTexts = [20, "yes"];
+
+  try {
+    async function createIntent() {
+      const intentsClient = new dialogflow.IntentsClient({
+        keyFilename:
+          "C:/Users/Neosoft/Desktop/pulkit-bot/dabadu-bot-wtnu-7c7756bc6906.json",
+      });
+
+      const agentPath = intentsClient.projectAgentPath(projectId);
+      const trainingPhrases = [];
+
+      trainingPhrasesParts.forEach((trainingPhrasesPart) => {
+        const part = {
+          text: trainingPhrasesPart,
+        };
+
+        // Here we create a new training phrase for each provided part.
+        const trainingPhrase = {
+          type: "EXAMPLE",
+          parts: [part],
+        };
+
+        trainingPhrases.push(trainingPhrase);
+      });
+      const messageText = {
+        text: messageTexts,
+      };
+
+      const message = {
+        text: messageText,
+      };
+
+      const intent = {
+        displayName: displayName,
+        trainingPhrases: trainingPhrases,
+        messages: [message],
+      };
+
+      const createIntentRequest = {
+        parent: agentPath,
+        intent: intent,
+      };
+      console.log("line 85");
+      // Create the intent
+      const response = await intentsClient.createIntent(createIntentRequest);
+      console.log("lin88");
+      console.log(response);
+      console.log(`Intent ${displayName} created`);
+      return res.send(`Intent ${displayName} created`);
+    }
+    createIntent();
+  } catch (err) {
+    return res.send(err);
+  }
+};
+
+//-->postman(row->json)==>http://localhost:4000/chatBot/createIntent
+{
+   "displayName" : "inventory",
+  "trainingPhrasesParts" : [
+    "how many cars you have?",
+    "do have any xuv?"
+  ],
+  "messageTexts" : [20, "yes" ]
+}
+
+
+https://googleapis.dev/nodejs/googleapis/latest/dialogflow/classes/Resource$Projects$Locations$Agent$Sessions$Contexts-1.html
+
+
+//-->second testng of create intent with webhook
+
+const CreateIntent = async (req, res) => {
+  const {
+    displayName,
+    trainingPhrasesParts,
+    messageTexts,
+    entityName,
+    paraName,
+    paraDisplayName,
+  } = req.body;
+  // const projectId = "chatbot-351910";
+  const projectId = process.env.NODE_PRODUCTID;
+  console.log(
+    projectId,
+    displayName,
+    trainingPhrasesParts,
+    messageTexts,
+    entityName,
+    paraName,
+    paraDisplayName
+  );
+
+  try {
+    async function createIntent() {
+      const projectId = process.env.NODE_PRODUCTID;
+      const intentsClient = new dialogflow.IntentsClient({
+        keyFilename:
+          "C:/Users/Neosoft/Desktop/pulkit-bot/dabadu-bot-wtnu-7c7756bc6906.json",
+      });
+      const agentPath = intentsClient.projectAgentPath(projectId);
+      console.log(projectId);
+      const trainingPhrases = [];
+
+      trainingPhrasesParts.forEach((trainingPhrasesPart) => {
+        const part = trainingPhrasesPart;
+
+        // Here we create a new training phrase for each provided part.
+        const trainingPhrase = {
+          type: "EXAMPLE",
+          parts: [part],
+        };
+
+        trainingPhrases.push(trainingPhrase);
+      });
+      const messageText = {
+        text: messageTexts,
+      };
+
+      const message = {
+        text: messageText,
+      };
+      console.log(message);
+      console.log(trainingPhrases);
+      const parameters = [
+        {
+          entityTypeDisplayName: entityName,
+          displayName: paraDisplayName,
+          name: paraName,
+        },
+      ];
+      const intent = {
+        displayName: displayName,
+        trainingPhrases: trainingPhrases,
+        messages: [message],
+        // parameters: parameters,
+        webhookState: "WEBHOOK_STATE_ENABLEDx`",
+      };
+
+      const createIntentRequest = {
+        parent: agentPath,
+        intent: intent,
+      };
+
+      // Create the intent
+
+      const response = await intentsClient.createIntent(createIntentRequest);
+      if (response != undefined) {
+        res.sendStatus(200);
+      }
+    }
+    createIntent();
+  } catch (err) {
+    // console.log("hihii" + err.message);
+    res.sendStatus(400);
+  }
+};
+
+
+//-->postman(http://localhost:4000/chatBot/createIntent)[post request select]
+{
+   "displayName" : "cars",
+  "trainingPhrasesParts" : [
+    
+    {"text":"do have any cars?",
+    "entityType":"@Car_Color",
+    "alias":"cars"}
+  ],
+  "messageTexts" : ["30", "yes" ]
+  
+}
+
+
+
+//->result=>webhook throug run create intent
+
+//--->webhookforcecreateIntent.json
+const fulfillment = require("dialogflow-fulfillment");
+const webhookforcreteintent = (request, response) => {
+  const tag = request.body.queryResult.intent.displayName;
+
+  let jsonResponse = {};
+  console.log("dsjnvdsvn");
+  if (tag === "Default Welcome Intent") {
+    console.log("dsjkbjsdf");
+    //fulfillment response to be sent to the agent if the request tag is equal to "welcome tag"
+    jsonResponse = {
+      fulfillment_messages: [
+        {
+          text: {
+            //fulfillment text response to be sent to the agent
+            text: ["Hello from a GCF Webhook"],
+          },
+        },
+      ],
+    };
+  } else if (tag === "get-name") {
+    //fulfillment response to be sent to the agent if the request tag is equal to "welcome tag"
+    jsonResponse = {
+      fulfillment_messages: [
+        {
+          text: {
+            //fulfillment text response to be sent to the agent
+            text: ["My name is Flowhook"],
+          },
+        },
+      ],
+    };
+  } else if (tag === "cars") {
+    const response = request.body.queryResult.parameters;
+    // const tex = response.Cars;
+    jsonResponse = {
+      fulfillment_messages: [
+        {
+          text: {
+            //fulfillment text response to be sent to the agent
+            text: ["yes we have many cars"],
+          },
+        },
+      ],
+    };
+  } else {
+    jsonResponse = {
+      //fulfillment text response to be sent to the agent if there are no defined responses for the specified tag
+      fulfillment_messages: [
+        {
+          text: {
+            ////fulfillment text response to be sent to the agent
+            text: [
+              `There are no fulfillment responses defined for "${tag}"" tag`,
+            ],
+          },
+        },
+      ],
+    };
+  }
+
+  response.send(jsonResponse);
+};
+module.exports = { webhookforcreteintent };
+
+//-->entitytyepcontroller.js
+
+const dialogflow = require("@google-cloud/dialogflow");
+const uuid = require("uuid");
+const EntityClient = new dialogflow.EntityTypesClient({
+  keyFilename:
+    "C:/Users/Neosoft/Desktop/pulkit-bot/dabadu-bot-wtnu-7c7756bc6906.json",
+});
+const intentClient = new dialogflow.IntentsClient({
+  keyFilename:
+    "C:/Users/Neosoft/Desktop/pulkit-bot/dabadu-bot-wtnu-7c7756bc6906.json",
+});
+const CreateEntity = async (req, res) => {
+  const projectId = process.env.NODE_PRODUCTID;
+  try {
+    const agentPath = EntityClient.projectAgentPath(projectId);
+    const entites = {
+      displayName: "Cars_Color",
+      kind: "KIND_MAP",
+      entities: [
+        { value: "Red" },
+        { value: "Gray", synonyms: ["white"] },
+        { value: "Black" },
+        { value: "Blue", synonyms: ["violet"] },
+      ],
+    };
+    const request = {
+      parent: agentPath,
+      entityType: entites,
+    };
+    // const [operation] = await EntityClient.createEntityType(request);
+    // const [response] = await operation.promise();
+    const response = await EntityClient.createEntityType(request);
+    return res.send(response);
+  } catch (err) {
+    console.log("inside err");
+    console.log(err);
+    return res.send(err);
+  }
+};
+
+const listEntityTypesAsync = async (req, res) => {
+  async function callListEntityTypes() {
+    const { EntityTypesClient } = require("@google-cloud/dialogflow").v2;
+    const dialogflowClient = new EntityTypesClient({
+      keyFilename:
+        "C:/Users/Neosoft/Desktop/pulkit-bot/dabadu-bot-wtnu-7c7756bc6906.json",
+    });
+    const projectId = process.env.NODE_PRODUCTID;
+    const agentPath = EntityClient.projectAgentPath(projectId);
+    // Construct request
+    const request = {
+      parent: agentPath,
+    };
+
+    // Run request
+    const iterable = await dialogflowClient.listEntityTypesAsync(request);
+    for await (const response of iterable) {
+      console.log(response);
+      res.send(response);
+    }
+  }
+
+  callListEntityTypes();
+};
+const checkBatchDeleteEntitiesProgress = async (req, res) => {
+  // Imports the Dialogflow library
+  const { EntityTypesClient } = require("@google-cloud/dialogflow").v2;
+
+  // Instantiates a client
+  const dialogflowClient = new EntityTypesClient();
+
+  async function callBatchDeleteEntities() {
+    const { EntityTypesClient } = require("@google-cloud/dialogflow").v2;
+    const dialogflowClient = new EntityTypesClient({
+      keyFilename:
+        "C:/Users/Neosoft/Desktop/pulkit-bot/dabadu-bot-wtnu-7c7756bc6906.json",
+    });
+    const projectId = process.env.NODE_PRODUCTID;
+    const agentPath = EntityClient.projectAgentPath(projectId);
+    // Construct request
+    const request = {
+      parent: agentPath,
+      entityValues: req.body.entityValues,
+    };
+
+    // Run request
+    const [operation] = await dialogflowClient.batchDeleteEntities(request);
+    const [response] = await operation.promise();
+    console.log(response);
+    res.send(response);
+  }
+
+  callBatchDeleteEntities();
+};
+module.exports = {
+  CreateEntity,
+  listEntityTypesAsync,
+  checkBatchDeleteEntitiesProgress,
+};
+
+
+//-->createAgent
+
+const CreateAgent = async (req, res) => {
+  try {
+    const projectId = process.env.NODE_PRODUCTID;
+    const parent = "projects/" + projectId + "/locations/global";
+    // const projectId = req.params.id;
+
+    const api_endpoint = "global-dialogflow.googleapis.com";
+
+    const agent = {
+      displayName: req.body.displayName,
+      defaultLanguageCode: "en",
+      timeZone: "America/Los_Angeles",
+    };
+
+    const { AgentsClient } = require("@google-cloud/dialogflow-cx");
+
+    // const client = new AgentsClient({ apiEndpoint: api_endpoint });
+    const client = new AgentsClient({
+      keyFilename:
+        "C:/Users/Neosoft/Desktop/pulkit-bot/dabadu-bot-wtnu-7c7756bc6906.json",
+    });
+    async function setAgentSample() {
+      const request = {
+        agent,
+        parent,
+      };
+
+      const [response] = await client.createAgent(request);
+      console.log(`response: ${JSON.stringify(response, null, 2)}`);
+      res.send(`response: ${JSON.stringify(response, null, 2)}`);
+
+      // Delete created agent resource
+      client.deleteAgent({ name: response.name });
+    }
+    await setAgentSample();
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+
